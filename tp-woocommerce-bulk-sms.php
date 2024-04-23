@@ -2,12 +2,12 @@
 defined('ABSPATH') or die("No access please!");
 
 /* Plugin Name: Tp WooCommerce MOBILESASA SMS
-* Plugin URI: https://codetribe.co.ke/
+* Plugin URI: https://wilsondevops.com/
 * Description: MOBILE SASA Bulk SMS for WooCommerce.
-* Version: 1.0
-* Author: CodeTribe Kenya
-* Author URI: https://codetribe.co.ke
-* Licence: GPL2
+* Version: 2.0
+* Author: Wilson Devops
+* Author URI: https://wilsondevops.com
+* Licence: GPLv2
 * WC requires at least: 2.2
 * WC tested up to: 8.3.1
 */
@@ -43,7 +43,7 @@ function woo_bulk_sms_init(){
 					\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables',__FILE__,true);
 				}
 			});
-			// add_filter('woocommerce_get_sections_advanced', array($this,"wc_bulk_sms"));
+			add_filter('woocommerce_get_sections_advanced', array($this,"wc_bulk_sms"));
 			add_filter('woocommerce_get_settings_advanced', array($this,"wc_bulk_sms_settings"),10,2);
 			add_action('woocommerce_order_status_changed', array($this,"tp_order_status"),10,3);
 		}
@@ -61,24 +61,28 @@ function woo_bulk_sms_init(){
 				$tp_sms_settings[] = array('name'=>__('Enable/Disable','wordpress'),'id'=>'wctpbulksms_enable','type'=>'checkbox','desc'=>__('Enable','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Sender ID','wordpress'),'id'=>'wctpbulksms_senderid','type'=>'text','placeholder'=>'MOBILESASA');
 				$tp_sms_settings[] = array('name'=>__('Api Token','wordpress'),'id'=>'wctpbulksms_apitoken','type'=>'text');
+				$tp_sms_settings[] = array('name'=>__('Admin Number','wordpress'),'id'=>'wctpbulksms_adminnumber','type'=>'text','desc'=>__('Admin Number will receive a text on every order placed','wordpress'), 'placeholder'=>'0729123456');
+				$tp_sms_settings[] = array('name'=>__('Receive Admin SMS','wordpress'),'id'=>'wctpbulksms_ordernewadmin','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Admin Placed Order SMS','wordpress'),'id'=>'wctpbulksms_ordernewadminsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello Admin, {name} has placed an order #{orderid}','wordpress'));
+
 				$tp_sms_settings[] = array('name'=>__('Order Placed','wordpress'),'id'=>'wctpbulksms_ordernew','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Placed SMS','wordpress'),'id'=>'wctpbulksms_ordernewsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have received your order {orderid}','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Placed SMS','wordpress'),'id'=>'wctpbulksms_ordernewsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have received your order #{orderid}','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Completed','wordpress'),'id'=>'wctpbulksms_ordercomplete','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Completed SMS','wordpress'),'id'=>'wctpbulksms_ordercompletesms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have shipped your order {orderid}','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Completed SMS','wordpress'),'id'=>'wctpbulksms_ordercompletesms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have shipped your order #{orderid}','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Cancelled','wordpress'),'id'=>'wctpbulksms_ordercancelled','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Cancelled SMS','wordpress'),'id'=>'wctpbulksms_ordercancelledsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have cancelled your order {orderid}','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Cancelled SMS','wordpress'),'id'=>'wctpbulksms_ordercancelledsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have cancelled your order #{orderid}','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Refunded','wordpress'),'id'=>'wctpbulksms_orderrefunded','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Refunded SMS','wordpress'),'id'=>'wctpbulksms_orderrefundedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have refunded your order {orderid}','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Refunded SMS','wordpress'),'id'=>'wctpbulksms_orderrefundedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have refunded your order #{orderid}','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Failed','wordpress'),'id'=>'wctpbulksms_orderfailed','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Failed SMS','wordpress'),'id'=>'wctpbulksms_orderfailedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order {orderid} has failed','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Failed SMS','wordpress'),'id'=>'wctpbulksms_orderfailedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} has failed','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Shipped','wordpress'),'id'=>'wctpbulksms_ordershipped','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Shipped SMS','wordpress'),'id'=>'wctpbulksms_ordershippedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order {orderid} has been shipped','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Shipped SMS','wordpress'),'id'=>'wctpbulksms_ordershippedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} has been shipped','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Ready for Pickup','wordpress'),'id'=>'wctpbulksms_orderreadypickup','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Ready for Pickup SMS','wordpress'),'id'=>'wctpbulksms_orderreadypickupsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order {orderid} is ready for pickup','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Ready for Pickup SMS','wordpress'),'id'=>'wctpbulksms_orderreadypickupsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} is ready for pickup','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Failed Delivery','wordpress'),'id'=>'wctpbulksms_orderfaileddelivery','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Failed Delivery SMS','wordpress'),'id'=>'wctpbulksms_orderfaileddeliverysms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order {orderid} has failed delivery','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Failed Delivery SMS','wordpress'),'id'=>'wctpbulksms_orderfaileddeliverysms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} has failed delivery','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Returned','wordpress'),'id'=>'wctpbulksms_orderreturned','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Returned SMS','wordpress'),'id'=>'wctpbulksms_orderreturnedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order {orderid} has been returned','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Returned SMS','wordpress'),'id'=>'wctpbulksms_orderreturnedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} has been returned','wordpress'));
 				$tp_sms_settings[] = array('type'=>'sectionend','id'=>'wctpbulksms');
 				return $tp_sms_settings;
 			} else return $settings;
@@ -90,6 +94,10 @@ function woo_bulk_sms_init(){
 				if($this->tp_bulksms && $this->tp_bulksms=='yes'){			
 				$this->tp_senderid = get_option('wctpbulksms_senderid');
 				$this->tp_apitoken = get_option('wctpbulksms_apitoken');
+				$this->tp_adminnumber = get_option('wctpbulksms_adminnumber');
+				$this->tp_on_adminreceive = get_option('wctpbulksms_ordernewadmin');
+				$this->tp_sms_adminreceive = get_option('wctpbulksms_ordernewadminsms');
+
 				$this->tp_on_ordernew = get_option('wctpbulksms_ordernew');
 				$this->tp_sms_ordernew = get_option('wctpbulksms_ordernewsms');
 				$this->tp_on_ordercomplete = get_option('wctpbulksms_ordercomplete');
@@ -111,6 +119,11 @@ function woo_bulk_sms_init(){
 				//Order details
 				global $woocommerce;
 				$order = new WC_Order($orderID);
+
+				if ($this->tp_on_adminreceive=='yes'){
+					$msgAdmin = $this->tp_sms_adminreceive;
+				}
+				
 
 				if ($new_status == 'processing') {
 					$msg = $this->tp_sms_ordernew;
@@ -149,7 +162,16 @@ function woo_bulk_sms_init(){
 					$msg = str_replace("{total}", $order->get_total(), $msg);
 					$msg = str_replace("{phone}", $order->get_billing_phone(), $msg);
 					$this->tp_sendExpressPostSMS($this->tp_clean_phone($order->get_billing_phone()), $msg);
-				}			
+				}
+				
+				if(($new_status=='processing' && $this->tp_on_adminreceive && $this->tp_on_adminreceive=='yes' && !empty($this->tp_sms_adminreceive)))
+				{
+					$msgAdmin = str_replace("{name}", $order->get_billing_first_name(), $msgAdmin);
+					$msgAdmin = str_replace("{orderid}", $orderID, $msgAdmin);
+					$msgAdmin = str_replace("{total}", $order->get_total(), $msgAdmin);
+					$msgAdmin = str_replace("{phone}", $order->get_billing_phone(), $msgAdmin);
+					$this->tp_sendExpressPostSMS($this->tp_clean_phone($this->tp_adminnumber), $msgAdmin);
+				}
 			}
 		}
 		
