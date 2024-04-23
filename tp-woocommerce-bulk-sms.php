@@ -77,19 +77,20 @@ class tp_bulksms_plugin {
 			//Order details
 			global $woocommerce;
 			$order = new WC_Order($orderID);
-			$msg = if ($new_order == 'processing') {
-						$msg = $this->tp_sms_ordernew;
-					} elseif ($new_order == 'complete') {
-						$msg = $this->tp_sms_ordercomplete;
-					} elseif ($new_order == 'cancelled') {
-						$msg = $this->tp_sms_ordercancelled;
-					} elseif ($new_order == 'refunded') {
-						$msg = $this->tp_sms_orderrefunded;
-					} else {
-						// Handle the case if $new_order doesn't match any of the above values
-					};
-
+			if ($new_order == 'processing') {
+				$msg = $this->tp_sms_ordernew;
+			} elseif ($new_order == 'complete') {
+				$msg = $this->tp_sms_ordercomplete;
+			} elseif ($new_order == 'cancelled') {
+				$msg = $this->tp_sms_ordercancelled;
+			} elseif ($new_order == 'refunded') {
+				$msg = $this->tp_sms_orderrefunded;
+			} else {
+				// Handle the case if $new_order doesn't match any of the above values
+			}
 			
+
+
 			if(($new_status=='processing' && $this->tp_on_ordernew && $this->tp_on_ordernew=='yes' && !empty($this->tp_sms_ordernew))||
 			($new_status=='complete' && $this->tp_on_ordercomplete && $this->tp_on_ordercomplete=='yes' && !empty($this->tp_sms_ordercomplete))||
 			($new_status=='cancelled' && $this->tp_on_ordercancelled && $this->tp_on_ordercancelled=='yes' && !empty($this->tp_sms_ordercancelled))||
