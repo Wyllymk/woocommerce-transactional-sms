@@ -51,6 +51,10 @@ class tp_bulksms_plugin {
 			$tp_sms_settings[] = array('name'=>__('Order Placed SMS','wordpress'),'id'=>'wctpbulksms_ordernewsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have received your order {orderid}','wordpress'));
 			$tp_sms_settings[] = array('name'=>__('Order Completed','wordpress'),'id'=>'wctpbulksms_ordercomplete','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
 			$tp_sms_settings[] = array('name'=>__('Order Completed SMS','wordpress'),'id'=>'wctpbulksms_ordercompletesms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have delivered your order {orderid}','wordpress'));
+			$tp_sms_settings[] = array('name'=>__('Order Cancelled','wordpress'),'id'=>'wctpbulksms_ordercancelled','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
+			$tp_sms_settings[] = array('name'=>__('Order Cancelled SMS','wordpress'),'id'=>'wctpbulksms_ordercancelledsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have cancelled your order {orderid}','wordpress'));
+			$tp_sms_settings[] = array('name'=>__('Order Refunded','wordpress'),'id'=>'wctpbulksms_orderrefunded','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
+			$tp_sms_settings[] = array('name'=>__('Order Refunded SMS','wordpress'),'id'=>'wctpbulksms_orderrefundedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have refunded your order {orderid}','wordpress'));
 			$tp_sms_settings[] = array('type'=>'sectionend','id'=>'wctpbulksms');
 			return $tp_sms_settings;
 		} else return $settings;
@@ -62,15 +66,34 @@ class tp_bulksms_plugin {
 			if($this->tp_bulksms && $this->tp_bulksms=='yes'){			
 			$this->tp_senderid = get_option('wctpbulksms_senderid');
 			$this->tp_apitoken = get_option('wctpbulksms_apitoken');
-			$this->tp_on_ordernew = get_option('wctpbulksms_ordernew');
+			$this->tp_on_ordernew = get_option('wctpbulksms_ordernew'); //Processing
 			$this->tp_sms_ordernew = get_option('wctpbulksms_ordernewsms');
-			$this->tp_on_ordercomplete = get_option('wctpbulksms_ordercomplete');
+			$this->tp_on_ordercomplete = get_option('wctpbulksms_ordercomplete'); //Completed
 			$this->tp_sms_ordercomplete = get_option('wctpbulksms_ordercompletesms');
+			$this->tp_on_ordercancelled = get_option('wctpbulksms_ordercancelled'); //Cancelled
+			$this->tp_sms_ordercancelled = get_option('wctpbulksms_ordercancelledsms');
+			$this->tp_on_orderrefunded = get_option('wctpbulksms_orderrefunded'); //Refunded
+			$this->tp_sms_orderrefunded = get_option('wctpbulksms_orderrefundedsms');
 			//Order details
 			global $woocommerce;
 			$order = new WC_Order($orderID);
-			$msg = $new_status=='processing' ? $this->tp_sms_ordernew : $this->tp_sms_ordercomplete;
-			if(($new_status=='processing' && $this->tp_on_ordernew && $this->tp_on_ordernew=='yes' && !empty($this->tp_sms_ordernew))||($new_status=='completed' && $this->tp_on_ordercomplete && $this->tp_on_ordercomplete=='yes' && !empty($this->tp_sms_ordercomplete))){
+			$msg = if ($new_order == 'processing') {
+						$msg = $this->tp_sms_ordernew;
+					} elseif ($new_order == 'complete') {
+						$msg = $this->tp_sms_ordercomplete;
+					} elseif ($new_order == 'cancelled') {
+						$msg = $this->tp_sms_ordercancelled;
+					} elseif ($new_order == 'refunded') {
+						$msg = $this->tp_sms_orderrefunded;
+					} else {
+						// Handle the case if $new_order doesn't match any of the above values
+					};
+
+			
+			if(($new_status=='processing' && $this->tp_on_ordernew && $this->tp_on_ordernew=='yes' && !empty($this->tp_sms_ordernew))||
+			($new_status=='complete' && $this->tp_on_ordercomplete && $this->tp_on_ordercomplete=='yes' && !empty($this->tp_sms_ordercomplete))||
+			($new_status=='cancelled' && $this->tp_on_ordercancelled && $this->tp_on_ordercancelled=='yes' && !empty($this->tp_sms_ordercancelled))||
+			($new_status=='refunded' && $this->tp_on_orderrefunded && $this->tp_on_orderrefunded=='yes' && !empty($this->tp_sms_orderrefunded))){
 				$msg = str_replace("{name}", $order->get_billing_first_name(), $msg);
 				$msg = str_replace("{orderid}", $orderID, $msg);
 				$msg = str_replace("{total}", $order->get_total(), $msg);
