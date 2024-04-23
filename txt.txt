@@ -1,0 +1,3 @@
+SMS settings are found at
+
+WooCommerce > Settings > Advanced > MOBILE SASA Bulk SMS 
