@@ -2,12 +2,12 @@
 defined('ABSPATH') or die("No access please!");
 
 /* Plugin Name: Tp WooCommerce MOBILESASA SMS
-* Plugin URI: https://codetribe.co.ke/
+* Plugin URI: https://wilsondevops.com/
 * Description: MOBILE SASA Bulk SMS for WooCommerce.
 * Version: 1.0
-* Author: CodeTribe Kenya
-* Author URI: https://codetribe.co.ke
-* Licence: GPL2
+* Author: Wilson
+* Author URI: https://wilsondevops.com
+* Licence: GPLv2
 * WC requires at least: 2.2
 * WC tested up to: 8.3.1
 */
