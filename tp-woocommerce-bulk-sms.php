@@ -228,7 +228,7 @@ function woo_bulk_sms_init(){
 				$timestamp2 = time() + 3600; //60 seconds
 				error_log("Timestamp: " . $timestamp);
 				error_log("Timestamp: " . $timestamp2);
-				wp_schedule_single_event( $timestamp2, 'send_draft_order_sms', array( $order->get_id() ) );
+				wp_schedule_single_event( $timestamp2  , 'send_draft_order_sms', array( $order->get_id() ) );
 		
 				// Set flag to prevent duplicate logging
 				update_post_meta( $order->get_id(), '_draft_duration_logged', true );
