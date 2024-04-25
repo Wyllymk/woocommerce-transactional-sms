@@ -79,8 +79,6 @@ function woo_bulk_sms_init(){
 				$tp_sms_settings[] = array('name'=>__('Order Completed SMS','wordpress'),'id'=>'wctpbulksms_ordercompletesms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have shipped your order #{orderid}','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Cancelled','wordpress'),'id'=>'wctpbulksms_ordercancelled','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Cancelled SMS','wordpress'),'id'=>'wctpbulksms_ordercancelledsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have cancelled your order #{orderid}','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Refunded','wordpress'),'id'=>'wctpbulksms_orderrefunded','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Order Refunded SMS','wordpress'),'id'=>'wctpbulksms_orderrefundedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have refunded your order #{orderid}','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Failed','wordpress'),'id'=>'wctpbulksms_orderfailed','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Failed SMS','wordpress'),'id'=>'wctpbulksms_orderfailedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} has failed','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Shipped','wordpress'),'id'=>'wctpbulksms_ordershipped','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
@@ -91,6 +89,8 @@ function woo_bulk_sms_init(){
 				$tp_sms_settings[] = array('name'=>__('Order Failed Delivery SMS','wordpress'),'id'=>'wctpbulksms_orderfaileddeliverysms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} has failed delivery','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Returned','wordpress'),'id'=>'wctpbulksms_orderreturned','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Returned SMS','wordpress'),'id'=>'wctpbulksms_orderreturnedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} has been returned','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Refunded','wordpress'),'id'=>'wctpbulksms_orderrefunded','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Refunded SMS','wordpress'),'id'=>'wctpbulksms_orderrefundedsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} has been refunded','wordpress'));
 				$tp_sms_settings[] = array('type'=>'sectionend','id'=>'wctpbulksms');
 				return $tp_sms_settings;
 			} else return $settings;
@@ -225,7 +225,10 @@ function woo_bulk_sms_init(){
 			if ( $order->has_status( 'checkout-draft' ) && ! $has_draft_logged ) {
 				// Schedule a cron job to send the SMS after 10 minutes
 				$timestamp = strtotime( '+1 minutes', current_time( 'timestamp' ) );
-				wp_schedule_single_event( $timestamp, 'send_draft_order_sms', array( $order->get_id() ) );
+				$timestamp2 = time() + 3600; //60 seconds
+				error_log("Timestamp: " . $timestamp);
+				error_log("Timestamp: " . $timestamp2);
+				wp_schedule_single_event( $timestamp2, 'send_draft_order_sms', array( $order->get_id() ) );
 		
 				// Set flag to prevent duplicate logging
 				update_post_meta( $order->get_id(), '_draft_duration_logged', true );
@@ -235,7 +238,7 @@ function woo_bulk_sms_init(){
 		
 		function send_draft_order_sms_callback( $order_id ) {
 			$order = wc_get_order( $order_id );
-			error_log("Order ID: " . $order_id);
+			
 		
 			// Perform SMS sending logic here
 			$tp_bulksms = get_option('wctpbulksms_enable');
