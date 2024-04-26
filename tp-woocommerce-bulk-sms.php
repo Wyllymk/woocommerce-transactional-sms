@@ -47,7 +47,7 @@ function woo_bulk_sms_init(){
 			add_filter('woocommerce_get_settings_advanced', array($this,"wc_bulk_sms_settings"),10,2);
 			add_action('woocommerce_order_status_changed', array($this,"tp_order_status"),10,3);
 			// Hook into order status changes
-			add_action( 'woocommerce_store_api_checkout_update_order_meta', array($this, 'wc_track_order_draft_duration') );
+			// add_action( 'woocommerce_store_api_checkout_update_order_meta', array($this, 'wc_track_order_draft_duration') );
 			add_action( 'woocommerce_store_api_checkout_update_order_meta', array($this, 'wc_track_order_draft_duration1') );
 			// Hook into the cron event to send the SMS
 			add_action( 'send_draft_order_sms', array($this,'send_draft_order_sms_callback'), 10, 1 );
@@ -71,8 +71,12 @@ function woo_bulk_sms_init(){
 				$tp_sms_settings[] = array('name'=>__('Receive Admin SMS','wordpress'),'id'=>'wctpbulksms_ordernewadmin','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Admin Placed Order SMS','wordpress'),'id'=>'wctpbulksms_ordernewadminsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello Admin, {name} has placed an order #{orderid}','wordpress'));
 
-				$tp_sms_settings[] = array('name'=>__('Abandoned Cart','wordpress'),'id'=>'wctpbulksms_orderdraft','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
-				$tp_sms_settings[] = array('name'=>__('Abandoned Cart SMS','wordpress'),'id'=>'wctpbulksms_orderdraftsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, please continue with your order #{orderid}','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Draft','wordpress'),'id'=>'wctpbulksms_orderdraft','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Draft SMS','wordpress'),'id'=>'wctpbulksms_orderdraftsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, please continue with your order #{orderid}','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Pending Payment','wordpress'),'id'=>'wctpbulksms_orderpending','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order Pending Payment SMS','wordpress'),'id'=>'wctpbulksms_orderpendingsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have received your order #{orderid} please finish payment','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order On-Hold','wordpress'),'id'=>'wctpbulksms_orderhold','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
+				$tp_sms_settings[] = array('name'=>__('Order On Hold SMS','wordpress'),'id'=>'wctpbulksms_orderholdsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, your order #{orderid} is on hold pending payment confirmation','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Processing','wordpress'),'id'=>'wctpbulksms_ordernew','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Processing SMS','wordpress'),'id'=>'wctpbulksms_ordernewsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello {name}, we have received your order #{orderid}','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Order Completed','wordpress'),'id'=>'wctpbulksms_ordercomplete','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
@@ -106,6 +110,10 @@ function woo_bulk_sms_init(){
 				$this->tp_on_adminreceive = get_option('wctpbulksms_ordernewadmin');
 				$this->tp_sms_adminreceive = get_option('wctpbulksms_ordernewadminsms');
 
+				$this->tp_on_orderpending = get_option('wctpbulksms_orderpending');
+				$this->tp_sms_orderpending = get_option('wctpbulksms_orderpendingsms');
+				$this->tp_on_orderhold = get_option('wctpbulksms_orderhold');
+				$this->tp_sms_orderhold = get_option('wctpbulksms_orderholdsms');
 				$this->tp_on_ordernew = get_option('wctpbulksms_ordernew');
 				$this->tp_sms_ordernew = get_option('wctpbulksms_ordernewsms');
 				$this->tp_on_ordercomplete = get_option('wctpbulksms_ordercomplete');
@@ -133,7 +141,11 @@ function woo_bulk_sms_init(){
 				}
 				
 
-				if ($new_status == 'processing') {
+				if ($new_status == 'pending') {
+					$msg = $this->tp_sms_orderpending;
+				} elseif ($new_status == 'on-hold') {
+					$msg = $this->tp_sms_orderhold;
+				} elseif ($new_status == 'processing') {
 					$msg = $this->tp_sms_ordernew;
 				} elseif ($new_status == 'completed') {
 					$msg = $this->tp_sms_ordercomplete;
@@ -156,6 +168,8 @@ function woo_bulk_sms_init(){
 				}
 
 				if(($new_status=='processing' && $this->tp_on_ordernew && $this->tp_on_ordernew=='yes' && !empty($this->tp_sms_ordernew))
+				||($new_status=='pending' && $this->tp_on_orderpending && $this->tp_on_orderpending=='yes' && !empty($this->tp_sms_orderpending))
+				||($new_status=='on-hold' && $this->tp_on_orderhold && $this->tp_on_orderhold=='yes' && !empty($this->tp_sms_orderhold))
 				||($new_status=='completed' && $this->tp_on_ordercomplete && $this->tp_on_ordercomplete=='yes' && !empty($this->tp_sms_ordercomplete))
 				||($new_status=='cancelled' && $this->tp_on_ordercancelled && $this->tp_on_ordercancelled=='yes' && !empty($this->tp_sms_ordercancelled))
 				||($new_status=='refunded' && $this->tp_on_orderrefunded && $this->tp_on_orderrefunded=='yes' && !empty($this->tp_sms_orderrefunded))
@@ -224,107 +238,53 @@ function woo_bulk_sms_init(){
 			
 			if ( $order->has_status( 'checkout-draft' ) && ! $has_draft_logged ) {
 				// Schedule a cron job to send the SMS after 10 minutes
-				$timestamp = strtotime( '+1 minutes', current_time( 'timestamp' ) );
-				$timestamp2 = time() + 3600; //60 seconds
+				$timestamp = strtotime( '+1 minutes', current_time( 'timestamp' ) ); //60 seconds
+				$timestamp2 = time() + 60; //60 seconds
 				error_log("Timestamp: " . $timestamp);
-				error_log("Timestamp: " . $timestamp2);
+				error_log("Timestamp2: " . $timestamp2);
 				wp_schedule_single_event( $timestamp2  , 'send_draft_order_sms', array( $order->get_id() ) );
+				// $this->send_draft_order_sms_callback($order->get_id());
 		
 				// Set flag to prevent duplicate logging
-				update_post_meta( $order->get_id(), '_draft_duration_logged', true );
+				// update_post_meta( $order->get_id(), '_draft_duration_logged', true );
 			}
 		}
 		
 		
 		function send_draft_order_sms_callback( $order_id ) {
-			$order = wc_get_order( $order_id );
-			
-		
-			// Perform SMS sending logic here
-			$tp_bulksms = get_option('wctpbulksms_enable');
-			if ( $tp_bulksms && $tp_bulksms == 'yes' ) {
-				$tp_senderid = get_option('wctpbulksms_senderid');
-				$tp_apitoken = get_option('wctpbulksms_apitoken');
-				
-				$tp_on_orderdraft = get_option('wctpbulksms_orderdraft');
-				$tp_sms_orderdraft = get_option('wctpbulksms_orderdraftsms');
-		
-				if ( $tp_on_orderdraft && $tp_on_orderdraft == 'yes' && ! empty( $tp_sms_orderdraft ) ) {
-					$msg = $tp_sms_orderdraft;
-					$msg = str_replace("{name}", $order->get_billing_first_name(), $msg);
-					$msg = str_replace("{orderid}", $order->get_id(), $msg);
-					$msg = str_replace("{total}", $order->get_total(), $msg);
-					$msg = str_replace("{phone}", $order->get_billing_phone(), $msg);
-					$this->tp_sendExpressPostSMS( $this->tp_clean_phone( $order->get_billing_phone() ), $msg );
-				}
-			}
-		}
-		
-		
 
-		function track_order_draft_duration($orderID, $old_status, $new_status) {
+			$order = wc_get_order( $order_id );
+
+			// Set flag to prevent duplicate logging
+			update_post_meta( $order->get_id(), '_draft_duration_logged_id', true );
+			
+			error_log("Order: " . $order->get_id());
+			// Perform SMS sending logic here
 			$this->tp_bulksms = get_option('wctpbulksms_enable');
 			if($this->tp_bulksms && $this->tp_bulksms=='yes'){
 				$this->tp_senderid = get_option('wctpbulksms_senderid');
 				$this->tp_apitoken = get_option('wctpbulksms_apitoken');
-
+				
 				$this->tp_on_orderdraft = get_option('wctpbulksms_orderdraft');
 				$this->tp_sms_orderdraft = get_option('wctpbulksms_orderdraftsms');
 
-				//Order details
-				global $woocommerce;
-				$order = new WC_Order($orderID);
-				global $wpdb;
+				$msg = $this->tp_sms_orderdraft;
 
-				// Check if the order status is checkout-draft.
-				$order_status = $wpdb->get_var( $wpdb->prepare(
-					"SELECT post_status FROM {$wpdb->prefix}posts WHERE ID = %d",
-					$order_id
-				) );
-			
-				if ( 'wc-checkout-draft' === $order_status ) {
-					// Perform your custom actions here.
-					// For example, you can update some custom meta data.
-					$order = wc_get_order( $order_id );
-					$order->update_meta_data( 'custom_meta_key', 'custom_meta_value' );
-					$order->save();
+				if(($this->tp_on_orderdraft && $this->tp_on_orderdraft=='yes' && !empty($this->tp_sms_orderdraft)))
+				{
+					$msg = str_replace("{name}", $order->get_billing_first_name(), $msg);
+					$msg = str_replace("{orderid}", $order->get_id(), $msg);
+					$msg = str_replace("{total}", $order->get_total(), $msg);
+					$msg = str_replace("{phone}", $order->get_billing_phone(), $msg);
+					$this->tp_sendExpressPostSMS($this->tp_clean_phone($order->get_billing_phone()), $msg);
+					error_log("Test: " . $msg);
 				}
-				// Check if the new status is "on hold"
-				if ($new_status == 'checkout-draft') {
-					// Record the current timestamp in order meta
-					update_post_meta($orderID, '_draft_start_time', current_time('timestamp'));
-				} elseif ($old_status == 'checkout-draft') {
-					// Get the previously recorded timestamp
-					$start_time = get_post_meta($orderID, '_draft_start_time', true);
 
-					if ($start_time) {
-						// Calculate the duration
-						$end_time = current_time('timestamp');
-						$duration = $end_time - $start_time;
-						
-						// Store the duration in order meta or perform any other action
-						update_post_meta($orderID, '_draft_duration', $duration);
-
-						// Check if the duration exceeds 10 minutes (600 seconds)
-						if ($duration > 60) {
-								
-							// Set $msg to $this->tp_sms_orderdraft
-							$msg = $this->tp_sms_orderdraft;
-							// Perform additional actions here if needed
-							if(($this->tp_on_orderdraft && $this->tp_on_orderdraft=='yes' && !empty($this->tp_sms_orderdraft) && !empty($order->get_billing_phone())))
-							{
-								$msg = str_replace("{name}", $order->get_billing_first_name(), $msg);
-								$msg = str_replace("{orderid}", $orderID, $msg);
-								$msg = str_replace("{total}", $order->get_total(), $msg);
-								$msg = str_replace("{phone}", $order->get_billing_phone(), $msg);
-								$this->tp_sendExpressPostSMS($this->tp_clean_phone($order->get_billing_phone()), $msg);
-							}
-						}
-						
-					}
-				}
 			}
+			// Delete the meta entry
+			// delete_post_meta( $order->get_id(), '_draft_duration_logged' );
 		}
+		
 		
 		//Send SMS
 		function tp_sendExpressPostSMS($phone, $message){
