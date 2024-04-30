@@ -3,7 +3,7 @@ defined('ABSPATH') or die("No access please!");
 
 /* Plugin Name: Tp WooCommerce MOBILESASA SMS
 * Plugin URI: https://github.com/Wyllymk/Woocommerce-Bulk-SMS
-* Description: MOBILE SASA Bulk SMS for WooCommerce.
+* Description: MOBILE SASA Transactional SMS for WooCommerce.
 * Version: 2.0
 * Author: Wilson Devops
 * Author URI: https://wilsondevops.com
@@ -70,7 +70,7 @@ function woo_bulk_sms_init(){
 				$tp_sms_settings[] = array('name'=>__('Enable/Disable','wordpress'),'id'=>'wctpbulksms_enable','type'=>'checkbox','desc'=>__('Enable','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Sender ID','wordpress'),'id'=>'wctpbulksms_senderid','type'=>'text','placeholder'=>'e.g MOBILESASA');
 				$tp_sms_settings[] = array('name'=>__('Api Token','wordpress'),'id'=>'wctpbulksms_apitoken','type'=>'text');
-				$tp_sms_settings[] = array('name'=>__('Admin Number','wordpress'),'id'=>'wctpbulksms_adminnumber','type'=>'text','desc'=>__('Admin Number will receive a text on every order processing status','wordpress'), 'placeholder'=>'e.g 0729123456, 0729123456');
+				$tp_sms_settings[] = array('name'=>__('Admin Number','wordpress'),'id'=>'wctpbulksms_adminnumber','type'=>'text','desc'=>__('Admin Number will receive a text on every order placed','wordpress'), 'placeholder'=>'e.g 0729123456, 0729123456');
 				$tp_sms_settings[] = array('name'=>__('Receive Admin SMS','wordpress'),'id'=>'wctpbulksms_ordernewadmin','type'=>'checkbox','desc'=>__('Send SMS','wordpress'));
 				$tp_sms_settings[] = array('name'=>__('Admin Placed Order SMS','wordpress'),'id'=>'wctpbulksms_ordernewadminsms','type'=>'textarea','desc'=>__('Order shortcodes: {name} {orderid} {total} {phone}','wordpress'),'placeholder'=>__('e.g Hello Admin, {name} has placed an order #{orderid}','wordpress'));
 
