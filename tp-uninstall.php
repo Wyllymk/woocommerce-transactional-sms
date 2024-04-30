@@ -22,4 +22,5 @@ delete_post_meta_by_key( '_sms_sent_logged' );
 
 // Remove any files or directories created by your plugin (if applicable)
 
-// Remove any other cleanup tasks specific to your plugin
+// Remove any other cleanup tasks specific to your 
+wp_unschedule_event( wp_next_scheduled( 'delete_custom_post_meta_event' ), 'delete_custom_post_meta_event' );
