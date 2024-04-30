@@ -2,13 +2,13 @@
 defined('ABSPATH') or die("No access please!");
 
 /* Plugin Name: Tp WooCommerce MOBILESASA SMS
-* Plugin URI: https://wilsondevops.com/
+* Plugin URI: https://github.com/Wyllymk/Woocommerce-Bulk-SMS
 * Description: MOBILE SASA Bulk SMS for WooCommerce.
 * Version: 2.0
 * Author: Wilson Devops
 * Author URI: https://wilsondevops.com
 * Licence: GPLv2
-* WC requires at least: 2.2
+* WC requires at least: 7.4
 * WC tested up to: 8.3.1
 */
 
@@ -17,7 +17,7 @@ defined('ABSPATH') or die("No access please!");
 require_once plugin_dir_path(__FILE__) . 'include/tp-woocommerce-custom-order-status.php';
 
 // Call each function to register the custom order statuses
-add_action('init', 'register_shipment_departure_order_status');
+add_action('init', 'add_custom_order_status_shipped');
 add_action('init', 'add_custom_order_status_ready_for_pickup');
 add_action('init', 'add_custom_order_status_failed_delivery');
 add_action('init', 'add_custom_order_status_returned');
@@ -45,30 +45,17 @@ function woo_bulk_sms_init(){
 			});
 			add_filter('woocommerce_get_sections_advanced', array($this,"wc_bulk_sms"));
 			add_filter('woocommerce_get_settings_advanced', array($this,"wc_bulk_sms_settings"),10,2);
-			// Hook the validation function to run when settings are being saved
-			add_filter('admin_init', array($this, "register_wc_bulk_sms_settings_validation"));
-			add_action('woocommerce_settings_saved', array($this, "validate_wc_bulk_sms_settings"));
 			add_action('woocommerce_order_status_changed', array($this,"tp_order_status"),10,3);
 			// Hook into order status changes
 			add_action( 'woocommerce_store_api_checkout_update_order_meta', array($this, 'wc_track_order_draft_duration') );
 			// Hook into the cron event to send the SMS
 			add_action( 'send_draft_order_sms', array($this,'send_draft_order_sms_callback'), 10, 1 );
+			// Hook the function to run when WordPress initializes
+			add_action('init', array($this, 'schedule_delete_custom_post_meta'));
+			// Hook the function to the scheduled event
+			add_action('delete_custom_post_meta_event', array($this, 'delete_custom_post_meta'));
 			
-
 		}
-
-
-
-		function register_wc_bulk_sms_settings_validation() {
-			// Define the settings group and option name
-			$option_group = 'wctpbulksms_settings_group';
-			$option_name = 'wctpbulksms_settings';
-
-			// Register the validation callback for the specified settings group and option name
-			register_setting($option_group, $option_name, 'validate_wc_bulk_sms_settings');
-		}
-
-
 
 		//Wc sections
 		function wc_bulk_sms($sections){
@@ -115,30 +102,6 @@ function woo_bulk_sms_init(){
 				return $tp_sms_settings;
 			} else return $settings;
 		}
-
-		function validate_wc_bulk_sms_settings($input) {
-			// Define the approved shortcodes
-			$approved_shortcodes = array('{name}', '{orderid}', '{total}', '{phone}');
-		
-			// Loop through each input field
-			foreach ($input as $key => $value) {
-				// Check if the input contains any disallowed shortcodes
-				if (preg_match('/{[^}]+}/', $value) && !in_array($value, $approved_shortcodes)) {
-					// If a disallowed shortcode is found, display an error message
-					add_settings_error(
-						$key,
-						'invalid_shortcode',
-						'Invalid shortcode used: ' . $value,
-						'error'
-					);
-		
-					// Remove the invalid value from the input
-					unset($input[$key]);
-				}
-			}
-		
-			return $input;
-		}
 		
 		//Order status
 		function tp_order_status($orderID, $old_status, $new_status){
@@ -172,6 +135,7 @@ function woo_bulk_sms_init(){
 				$this->tp_sms_orderfaileddelivery = get_option('wctpbulksms_orderfaileddeliverysms');
 				$this->tp_on_orderreturned = get_option('wctpbulksms_orderreturned');
 				$this->tp_sms_orderreturned = get_option('wctpbulksms_orderreturnedsms');
+				
 				//Order details
 				global $woocommerce;
 				$order = new WC_Order($orderID);
@@ -179,7 +143,6 @@ function woo_bulk_sms_init(){
 				if ($this->tp_on_adminreceive=='yes'){
 					$msgAdmin = $this->tp_sms_adminreceive;
 				}
-				
 
 				if ($new_status == 'pending') {
 					$msg = $this->tp_sms_orderpending;
@@ -241,6 +204,10 @@ function woo_bulk_sms_init(){
 						$this->tp_sendExpressPostSMS($this->tp_clean_phone($this->tp_adminnumber), $msgAdmin);
 						// Set flag to prevent duplicate logging
 						update_post_meta( $order->get_id(), '_admin_sms_sent', true );
+						// Delete the meta entry
+						delete_post_meta( $order->get_id(), '_draft_duration_logged' );
+						// Delete the meta entry
+						delete_post_meta( $order->get_id(), '_sms_sent_logged' );
 					}
 				}
 				
@@ -255,7 +222,6 @@ function woo_bulk_sms_init(){
 			if ( $order->has_status( 'checkout-draft' ) && ! $has_draft_logged ) {
 				// Schedule a cron job to send the SMS after 10 minutes
 				$timestamp = time() + 300; //300 seconds
-				error_log("Timestamp: " . $timestamp);
 				wp_schedule_single_event( $timestamp  , 'send_draft_order_sms', array( $order->get_id() ) );
 		
 				// Set flag to prevent duplicate logging
@@ -266,12 +232,12 @@ function woo_bulk_sms_init(){
 		
 		function send_draft_order_sms_callback( $order_id ) {
 
-			$has_sms_logged = get_post_meta( $order->get_id(), '_sms_sent_logged', true );
-
-			if($order->has_status( 'checkout-draft' ) && ! $has_sms_logged ){
-				$order = wc_get_order( $order_id );
+			$has_sms_logged = get_post_meta( $order_id, '_sms_sent_logged', true );
 			
-				error_log("Order: " . $order->get_id());
+			$order = wc_get_order( $order_id );
+			
+			if($order->has_status( 'checkout-draft' ) && ! $has_sms_logged ){
+			
 				// Perform SMS sending logic here
 				$this->tp_bulksms = get_option('wctpbulksms_enable');
 				if($this->tp_bulksms && $this->tp_bulksms=='yes'){
@@ -296,20 +262,11 @@ function woo_bulk_sms_init(){
 					update_post_meta( $order->get_id(), '_sms_sent_logged', true );
 					// Delete the meta entry
 					delete_post_meta( $order->get_id(), '_draft_duration_logged' );
-
-					$deleted = delete_post_meta( $order->get_id(), '_draft_duration_logged' );
-					if ( $deleted ) {
-						error_log( 'Meta "_draft_duration_logged" deleted successfully.' );
-					} else {
-						error_log( 'Failed to delete meta "_draft_duration_logged".' );
-					}
 	
 				}
-				
 
 			}
 
-			
 		}
 		
 		
@@ -329,11 +286,6 @@ function woo_bulk_sms_init(){
 				$phone_param = "phone";
 			}           
 		
-			error_log("MULTIPLE: " . $url);
-			error_log("PHONE PARAM: " . $phone_param);
-			error_log("PHONES SMS: " . $phones);
-			error_log("MESSAGE SMS: " . $message);
-		
 			$postData = [
 				"senderID" => $this->tp_senderid,
 				"message" => $message,
@@ -351,9 +303,6 @@ function woo_bulk_sms_init(){
 				CURLOPT_TIMEOUT => 400, //timeout in seconds
 				CURLOPT_POSTFIELDS => $postData
 			]);
-			
-			// Log the request body
-			error_log("Request Body: " . http_build_query($postData));
 		
 			// Send the request
 			$response = curl_exec($curl);
@@ -368,10 +317,6 @@ function woo_bulk_sms_init(){
 			}
 			return $status;
 		}
-		
-		
-		
-		
 		
 		//Tp clean phone
 		function tp_clean_phone($phones){
@@ -393,10 +338,32 @@ function woo_bulk_sms_init(){
 		
 			return implode(",", $cleaned_phones);
 		}
-		
-		
-		
-		
+
+		// Function to delete specific post meta
+		function delete_custom_post_meta() {
+			// Define the post meta keys created by your plugin
+			$meta_keys = array(
+				'_admin_sms_sent',
+				'_draft_duration_logged',
+				'_sms_sent_logged'
+				// Add other meta keys as needed
+			);
+
+			// Loop through each meta key and delete the post meta for all posts
+			foreach ($meta_keys as $meta_key) {
+				// Delete the post meta for all posts
+				delete_metadata('post', 0, $meta_key, '', true);
+			}
+		}
+
+		// Schedule the function to run once every 2 hours
+		function schedule_delete_custom_post_meta() {
+			// Check if the scheduled event already exists
+			if (!wp_next_scheduled('delete_custom_post_meta_event')) {
+				// Schedule the event to run once every 2 hours
+				wp_schedule_event(time(), 'daily', 'delete_custom_post_meta_event');
+			}
+		}	
 		
 	}
 
@@ -405,5 +372,13 @@ function woo_bulk_sms_init(){
 		$tp_sms_pl = new tp_bulksms_plugin();
 	}
 	
+}
+// Register uninstall hook
+register_uninstall_hook( __FILE__, 'tp_bulk_sms_uninstall' );
+
+// Uninstall hook callback function
+function tp_bulk_sms_uninstall() {
+    // Load the external file for uninstallation tasks
+    include_once plugin_dir_path( __FILE__ ) . 'tp_uninstall.php';
 }
 ?>
