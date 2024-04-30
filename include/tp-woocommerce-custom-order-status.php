@@ -4,7 +4,7 @@ defined('ABSPATH') or die("No access please!");
 // Add custom order status to WooCommerce
 
 
-function register_shipment_departure_order_status() {
+function add_custom_order_status_shipped() {
 	register_post_status( 'wc-shipped', array(
 		'label'                     => 'Shipped',
 		'public'                    => true,
